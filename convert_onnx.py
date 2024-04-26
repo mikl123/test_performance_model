@@ -6,6 +6,9 @@ from tqdm import tqdm
 from alike_step1 import ALike, configs
 import torch
 import torchvision.models as models
+
+import onnx
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ALike Demo.')
     parser.add_argument('input', type=str, default='',
@@ -32,7 +35,7 @@ if __name__ == '__main__':
                   top_k=args.top_k,
                   scores_th=args.scores_th,
                   n_limit=args.n_limit)
-    img = torch.randn(480, 640, 3)
+    img = torch.randn(1, 3, 480, 640)
 
     torch.onnx.export(model,               # model being run
                    img,                         # model input (or a tuple for multiple inputs)
@@ -41,3 +44,5 @@ if __name__ == '__main__':
                   input_names = ['img'],   # the model's input names
                   output_names = ['output']
                   )
+    print("infreing ")
+    # onnx.shape_inference.infer_shapes_path("step1.onnx", "step1.onnx")

@@ -89,7 +89,9 @@ class ALNet(nn.Module):
         self.gate = nn.ReLU(inplace=True)
 
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.pool4 = nn.MaxPool2d(kernel_size=4, stride=4)
+        self.pool4_1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool4_2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
 
         self.block1 = ConvBlock(3, c1, self.gate, nn.BatchNorm2d)
 
@@ -111,10 +113,10 @@ class ALNet(nn.Module):
         self.conv2 = resnet.conv1x1(c2, dim // 4)
         self.conv3 = resnet.conv1x1(c3, dim // 4)
         self.conv4 = resnet.conv1x1(dim, dim // 4)
-        self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
-        self.upsample8 = nn.Upsample(scale_factor=8, mode='bilinear', align_corners=True)
-        self.upsample32 = nn.Upsample(scale_factor=32, mode='bilinear', align_corners=True)
+        self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
+        self.upsample8 = nn.Upsample(scale_factor=8, mode='bilinear', align_corners=False)
+        self.upsample32 = nn.Upsample(scale_factor=32, mode='bilinear', align_corners=False)
 
         # ================================== detector and descriptor head
         self.single_head = single_head
@@ -127,9 +129,14 @@ class ALNet(nn.Module):
         x1 = self.block1(image)  # B x c1 x H x W
         x2 = self.pool2(x1)
         x2 = self.block2(x2)  # B x c2 x H/2 x W/2
-        x3 = self.pool4(x2)
+        x3 = self.pool4_1(x2)
+        x3= self.pool4_2(x3)
+
         x3 = self.block3(x3)  # B x c3 x H/8 x W/8
-        x4 = self.pool4(x3)
+        x4 = self.pool4_1(x3)
+        x4 = self.pool4_2(x4)
+
+
         x4 = self.block4(x4)  # B x dim x H/32 x W/32
 
         # ================================== feature aggregation

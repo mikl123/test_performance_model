@@ -75,7 +75,7 @@ class ALike(ALNet):
         # ==================== image size constraint
         image = img.clone()
         # ==================== convert image to tensor
-        image =image.to(self.device).to(torch.float32).permute(2, 0, 1)[None] / 255.0
+        # image =image.to(self.device).to(torch.float32).permute(2, 0, 1)[None] / 255.0
         # ==================== extract keypoints
         with torch.no_grad():
             x = self.extract_dense_map(image,H,W)

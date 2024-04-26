@@ -106,6 +106,9 @@ class SimpleTracker(object):
         return matches.transpose()
 
 def predict(step_1, step_2, data):
+    data = np.expand_dims(data, axis=0)
+    data = np.transpose(data, (0, 3, 1, 2))/ 255.0
+    print(data.shape)
     start_time = time.time()
     output = step_1.run(None, {"img": data.astype(np.float32)})
     end_time = time.time()
@@ -166,8 +169,9 @@ if __name__ == '__main__':
         
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        pred = model(img_rgb, sub_pixel=not args.no_sub_pixel)
+        # pred = model(img_rgb, sub_pixel=not args.no_sub_pixel)
         img_rgb = copy.deepcopy(img_rgb)
+        
         print(img_rgb.shape)
         for i in range(iterations):
             pred = predict(ort_session, model, img_rgb)
