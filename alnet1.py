@@ -164,9 +164,12 @@ class ALNet(nn.Module):
             x1234 = self.gate(self.convhead1(x1234))
         x = self.convhead2(x1234)  # B x dim+1 x H x W
 
+        start = time.time()
         descriptor_map = x[:, :-1, :, :]
         scores_map = torch.sigmoid(x[:, -1, :, :]).unsqueeze(1)
         self.feature_extraction.append(time.time() - start_time)
+        print(time.time() - start)
+        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         return scores_map, descriptor_map
 
 

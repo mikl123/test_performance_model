@@ -43,7 +43,7 @@ class ALike(ALNet):
         self.dkd = DKD(radius=self.radius, top_k=self.top_k,
                        scores_th=self.scores_th, n_limit=self.n_limit)
         self.device = device
-
+        self.time_all = 0
         if model_path != '':
             state_dict = torch.load(model_path, self.device)
             self.load_state_dict(state_dict)
@@ -81,8 +81,8 @@ class ALike(ALNet):
             return {'descriptor_map': descriptor_map, 'scores_map': scores_map, }
         else:
             return descriptor_map, scores_map
-
-    def forward(self, x):
+    
+    def forward(self, scores_map, descriptor_map):
         """
         :param img: np.array HxWx3, RGB
         :param image_size_max: maximum image size, otherwise, the image will be resized
@@ -90,17 +90,23 @@ class ALike(ALNet):
         :param sub_pixel: whether to use sub-pixel accuracy
         :return: a dictionary with 'keypoints', 'descriptors', 'scores', and 'time'
         """
+        # descriptor_map = torch.tensor(descriptor_map)
+        # scores_map = torch.tensor(scores_map)
+        # print("Score map: ")
+        # print(scores_map.shape)
+
+        # print("Descriptor map: ")
+        # print(descriptor_map.shape)
         H = 480
         W = 640
-        x = torch.tensor(x)
-        descriptor_map = x[:, :-1, :, :]
-        scores_map = torch.sigmoid(x[:, -1, :, :]).unsqueeze(1)
-        descriptor_map = torch.nn.functional.normalize(descriptor_map, p=2, dim=1)
+
+        time_start = time.time()
         descriptor_map =torch.tensor(descriptor_map)
         scores_map =torch.tensor(scores_map)
         sort=False
         sub_pixel=False
-
+        self.time_all += time.time() - time_start
+        # time_start = time.time()
         keypoints, descriptors, scores, _ = self.dkd(scores_map, descriptor_map,
                                                          sub_pixel=sub_pixel)
         keypoints, descriptors, scores = keypoints[0], descriptors[0], scores[0]
@@ -112,11 +118,14 @@ class ALike(ALNet):
             descriptors = descriptors[indices]
             scores = scores[indices]
 
-
+        
         return {'keypoints': keypoints.cpu().numpy(),
                 'descriptors': descriptors.cpu().numpy(),
                 'scores': scores.cpu().numpy(),
                 'scores_map': scores_map.cpu().numpy()}
+
+    
+        return keypoints.cpu(), descriptors.cpu()
 
     def access_dkd(self):
         return self.dkd

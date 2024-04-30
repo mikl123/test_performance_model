@@ -36,7 +36,8 @@ if __name__ == '__main__':
                   scores_th=args.scores_th,
                   n_limit=args.n_limit)
     img = torch.randn(1, 3, 480, 640)
-
+    print(img)
+    print("here")
     torch.onnx.export(model,               # model being run
                    img,                         # model input (or a tuple for multiple inputs)
                   "step1.onnx",   # where to save the model (can be a file or file-like object)

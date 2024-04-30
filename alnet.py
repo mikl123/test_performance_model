@@ -110,7 +110,7 @@ class ALNet(nn.Module):
 
         # ================================== feature aggregation
         self.conv1 = resnet.conv1x1(c1, dim // 4)
-        self.conv2 = resnet.conv1x1(c2, dim // 4)
+        self.conv2 = resnet.conv1x1(c2, dim // 4)   
         self.conv3 = resnet.conv1x1(c3, dim // 4)
         self.conv4 = resnet.conv1x1(dim, dim // 4)
         self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)

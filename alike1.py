@@ -83,8 +83,10 @@ class ALike(ALNet):
         # ====================================================
 
         # BxCxHxW
-
+        time_c = time.time()
         descriptor_map = torch.nn.functional.normalize(descriptor_map, p=2, dim=1)
+        print("-------------------------------------------------")
+        print(time.time() - time_c)
         self.feature_extraction.append(time.time() - a)
         if ret_dict:
             return {'descriptor_map': descriptor_map, 'scores_map': scores_map, }
@@ -126,20 +128,25 @@ class ALike(ALNet):
                                                          sub_pixel=sub_pixel)
             keypoints, descriptors, scores = keypoints[0], descriptors[0], scores[0]
             keypoints = (keypoints + 1) / 2 * keypoints.new_tensor([[W - 1, H - 1]])
-            self.step2.append(time.time() - time_start)
+            
+
 
         if sort:
             indices = torch.argsort(scores, descending=True)
             keypoints = keypoints[indices]
             descriptors = descriptors[indices]
             scores = scores[indices]
-
+        # self.step2.append(time.time() - time_start)
         end = time.time()
-
-        return {'keypoints': keypoints.cpu().numpy(),
-                'descriptors': descriptors.cpu().numpy(),
-                'scores': scores.cpu().numpy(),
-                'scores_map': scores_map.cpu().numpy(),
+        keypoints = keypoints.cpu().numpy()
+        descriptors = descriptors.cpu().numpy()
+        scores = scores.cpu().numpy()
+        scores_map = scores_map.cpu().numpy()
+        self.step2.append(time.time() - time_start)
+        return {'keypoints': keypoints,
+                'descriptors': descriptors,
+                'scores': scores,
+                'scores_map': scores_map,
                 'time': end - start, }
 
 

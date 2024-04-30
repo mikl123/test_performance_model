@@ -5,7 +5,6 @@ import time
 import multiprocessing as mp
 import numpy as np
 import threading
-
 # coordinates system
 #  ------------------------------>  [ x: range=-1.0~1.0; w: range=0~W ]
 #  | -----------------------------
@@ -31,8 +30,8 @@ def max_pool_parallel(x,nms_radius):
     res = []
     threads = []
     
-    for i in range(0, len(x[0][0]),len(x[0][0])//2):
-        thread = threading.Thread(target=max_pool, args=(x[:,:,i:i+len(x[0][0])//2,:],nms_radius,res,i))
+    for i in range(0, x[0][0].size()[0],x[0][0].size()[0]//2):
+        thread = threading.Thread(target=max_pool, args=(x[:,:,i:i+x[0][0].size()[0]//2,:],nms_radius,res,i))
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -225,7 +224,7 @@ class DKD(nn.Module):
         else:
             if self.scores_th > 0:
                 masks = nms_scores > self.scores_th
-                if masks.sum() == 0:
+                if np.sum(np.array(masks)) == 0:
                     th = scores_nograd.reshape(b, -1).mean(dim=1)  # th = self.scores_th
                     masks = nms_scores > th.reshape(b, 1, 1, 1)
             else:
@@ -237,7 +236,7 @@ class DKD(nn.Module):
             scores_view = scores_nograd.reshape(b, -1)
             for mask, scores in zip(masks, scores_view):
                 indices = mask.nonzero(as_tuple=False)[:, 0]
-                if len(indices) > self.n_limit:
+                if indices.size()[0] > self.n_limit:
                     kpts_sc = scores[indices]
                     sort_idx = kpts_sc.sort(descending=True)[1]
                     sel_idx = sort_idx[:self.n_limit]

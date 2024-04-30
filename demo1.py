@@ -158,9 +158,9 @@ if __name__ == '__main__':
     average_sample_descriptors =model.access_dkd().average_sample_descriptors
     average_nms = model.access_dkd().average_nms
     average_keypoint_other = model.access_dkd().average_keypoint_other
-    nms = model.access_dkd().nms
+    # nms = model.access_dkd().nms
     print("===============================================================")
-    print(nms)
+    # print(nms)
     print("===============================================================")
 
     print("Feature encoding")

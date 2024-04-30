@@ -10,6 +10,8 @@ from alike_step2 import ALike, configs
 import onnxruntime
 import torch
 import copy
+import json
+import sys
 import time
 class ImageLoader(object):
     def __init__(self, filepath: str):
@@ -62,7 +64,8 @@ class ImageLoader(object):
     def __len__(self):
         return self.N
 
-
+time_step1 = 0
+time_step2=  0
 class SimpleTracker(object):
     def __init__(self):
         self.pts_prev = None
@@ -106,22 +109,37 @@ class SimpleTracker(object):
         return matches.transpose()
 
 def predict(step_1, step_2, data):
+    global time_step1, time_step2
     data = np.expand_dims(data, axis=0)
     data = np.transpose(data, (0, 3, 1, 2))/ 255.0
-    print(data.shape)
-    start_time = time.time()
-    output = step_1.run(None, {"img": data.astype(np.float32)})
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print("Step 1 Execution time:", execution_time, "seconds")
+    
 
     start_time = time.time()
-    print(np.array(output).shape)
-    res = step_2.forward(output[0])
-    
-    end_time = time.time()
-    execution_time = end_time - start_time
+    output = step_1.run(None, {"img": data.astype(np.float32)})
+    print(type(output))
+    # converted_list = [arr.tolist() for arr in output]
+
+    # with open('calibration/calibration.json', 'w') as f:
+    #         json.dump(converted_list, f)
+    # sys.exit(0)
+    execution_time = time.time() - start_time
+    print("Step 1 Execution time:", execution_time, "seconds")
+    time_step1 += execution_time
+
+
+    start_time = time.time()
+    # print(output[1])
+    res = step_2.run(None, {"score_map": output[0], "descriptor_map": output[1]})
+    # print(res.shape)
+    # res = step_2.forward(output[0], output[1])
+    print("======================")
+    print(res[0].shape)
+    print(res[1].shape)
+    print("======================")
+    execution_time = time.time() - start_time
     print("Step 2 execution time:", execution_time, "seconds")
+    time_step2 += execution_time
+
     return res
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ALike Demo.')
@@ -154,6 +172,9 @@ if __name__ == '__main__':
     onnx_model_path = "step1.onnx"
     ort_session = onnxruntime.InferenceSession(onnx_model_path)
     
+    onnx_model_path1 = "step2.onnx"
+    ort_session1 = onnxruntime.InferenceSession(onnx_model_path1)
+    
     tracker = SimpleTracker()
 
     if not args.no_display:
@@ -174,10 +195,10 @@ if __name__ == '__main__':
         
         print(img_rgb.shape)
         for i in range(iterations):
-            pred = predict(ort_session, model, img_rgb)
-        kpts = pred['keypoints']
-        desc = pred['descriptors']
-
+            pred = predict(ort_session, ort_session1, img_rgb)
+        kpts = pred[0]
+        desc = pred[1]
+        
         out, N_matches = tracker.update(img, kpts, desc)
 
         if not args.no_display:
@@ -192,20 +213,24 @@ if __name__ == '__main__':
     average_keypoint_other = model.access_dkd().average_keypoint_other
 
     print("--------------Results-------------")
-    print("DKD:")
-    print(np.sum(average_all) / iterations)
+    print("Step1:")
+    print(np.sum(time_step1) / iterations)
+    print("Step2:")
+    print(np.sum(time_step2) / iterations)
+    # print("DKD:")
+    # print(np.sum(average_all) / iterations)
 
-    print("Detect Keypoints:")
-    print(np.sum(average_detect_keypoints) / iterations)
+    # print("Detect Keypoints:")
+    # print(np.sum(average_detect_keypoints) / iterations)
 
-    print("Sample Descriptors:")
-    print(np.sum(average_sample_descriptors) / iterations)
+    # print("Sample Descriptors:")
+    # print(np.sum(average_sample_descriptors) / iterations)
 
-    print("NMS_default:")
-    print(np.sum(average_nms) / iterations)
+    # print("NMS_default:")
+    # print(np.sum(average_nms) / iterations)
 
-    print("Average keypoints other:")
-    print(np.sum(average_keypoint_other) / iterations)
+    # print("Average keypoints other:")
+    # print(np.sum(average_keypoint_other) / iterations)
 
     logging.info('Finished!')
     if not args.no_display:
