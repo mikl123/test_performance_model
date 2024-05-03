@@ -109,37 +109,14 @@ class SimpleTracker(object):
         return matches.transpose()
 
 def predict(step_1, step_2, data):
-    global time_step1, time_step2
+    start1 = time.time()
     data = np.expand_dims(data, axis=0)
     data = np.transpose(data, (0, 3, 1, 2))/ 255.0
-    
-
-    start_time = time.time()
     output = step_1.run(None, {"img": data.astype(np.float32)})
-    print(type(output))
-    # converted_list = [arr.tolist() for arr in output]
-
-    # with open('calibration/calibration.json', 'w') as f:
-    #         json.dump(converted_list, f)
-    # sys.exit(0)
-    execution_time = time.time() - start_time
-    print("Step 1 Execution time:", execution_time, "seconds")
-    time_step1 += execution_time
-
-
-    start_time = time.time()
-    # print(output[1])
-    res = step_2.run(None, {"score_map": output[0], "descriptor_map": output[1]})
-    # print(res.shape)
-    # res = step_2.forward(output[0], output[1])
-    print("======================")
-    print(res[0].shape)
-    print(res[1].shape)
-    print("======================")
-    execution_time = time.time() - start_time
-    print("Step 2 execution time:", execution_time, "seconds")
-    time_step2 += execution_time
-
+    print(str(time.time() - start1) + "step1")
+    start1 = time.time()
+    res = step_2(output[0],output[1])
+    print(str(time.time() - start1) + "step2")
     return res
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ALike Demo.')
@@ -172,9 +149,6 @@ if __name__ == '__main__':
     onnx_model_path = "step1.onnx"
     ort_session = onnxruntime.InferenceSession(onnx_model_path)
     
-    onnx_model_path1 = "step2.onnx"
-    ort_session1 = onnxruntime.InferenceSession(onnx_model_path1)
-    
     tracker = SimpleTracker()
 
     if not args.no_display:
@@ -182,25 +156,16 @@ if __name__ == '__main__':
         cv2.namedWindow(args.model)
 
     runtime = []
-    iterations = 5
     progress_bar = tqdm(image_loader)
     for img in progress_bar:
         if img is None:
             break
-        
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
-        # pred = model(img_rgb, sub_pixel=not args.no_sub_pixel)
         img_rgb = copy.deepcopy(img_rgb)
-        
-        print(img_rgb.shape)
-        for i in range(iterations):
-            pred = predict(ort_session, ort_session1, img_rgb)
-        kpts = pred[0]
-        desc = pred[1]
-        
+        pred = predict(ort_session, model, img_rgb)
+        kpts = pred["keypoints"]
+        desc = pred["descriptors"]
         out, N_matches = tracker.update(img, kpts, desc)
-
         if not args.no_display:
             cv2.imshow(args.model, out)
             if cv2.waitKey(1) == ord('q'):
@@ -212,11 +177,6 @@ if __name__ == '__main__':
     average_nms = model.access_dkd().average_nms
     average_keypoint_other = model.access_dkd().average_keypoint_other
 
-    print("--------------Results-------------")
-    print("Step1:")
-    print(np.sum(time_step1) / iterations)
-    print("Step2:")
-    print(np.sum(time_step2) / iterations)
     # print("DKD:")
     # print(np.sum(average_all) / iterations)
 

@@ -103,6 +103,9 @@ class ALike(ALNet):
         time_start = time.time()
         descriptor_map =torch.tensor(descriptor_map)
         scores_map =torch.tensor(scores_map)
+
+        descriptor_map = torch.nn.functional.normalize(descriptor_map, p=2, dim=1)
+        
         sort=False
         sub_pixel=False
         self.time_all += time.time() - time_start
@@ -123,9 +126,6 @@ class ALike(ALNet):
                 'descriptors': descriptors.cpu().numpy(),
                 'scores': scores.cpu().numpy(),
                 'scores_map': scores_map.cpu().numpy()}
-
-    
-        return keypoints.cpu(), descriptors.cpu()
 
     def access_dkd(self):
         return self.dkd

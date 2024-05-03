@@ -84,11 +84,5 @@ class ALike(ALNet):
         start = time.time()
         descriptor_map, scores_map = torch.split(x, [x.shape[1] - 1, 1], dim = 1)
         scores_map = torch.sigmoid(scores_map)
-        print(time.time() - start)
-        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-        descriptor_map = torch.nn.functional.normalize(descriptor_map, p=2, dim=1)
-        print("score")
-        print(scores_map.shape)
-        print("descriptor")
-        print(descriptor_map.shape)
+
         return scores_map, descriptor_map

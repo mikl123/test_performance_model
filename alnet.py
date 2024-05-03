@@ -145,8 +145,8 @@ class ALNet(nn.Module):
         x3 = self.gate(self.conv3(x3))  # B x dim//4 x H//8 x W//8
         x4 = self.gate(self.conv4(x4))  # B x dim//4 x H//32 x W//32
         x2_up = self.upsample2(x2)  # B x dim//4 x H x W
-        x3_up = self.upsample8(x3)  # B x dim//4 x H x W
-        x4_up = self.upsample32(x4)  # B x dim//4 x H x W
+        x3_up = self.upsample2(self.upsample4(x3))  # B x dim//4 x H x W
+        x4_up = self.upsample4(self.upsample4(self.upsample2(x4)))  # B x dim//4 x H x W
         x1234 = torch.cat([x1, x2_up, x3_up, x4_up], dim=1)
 
         # ================================== detector and descriptor head

@@ -1,8 +1,8 @@
-opencv-python~=4.5.1.48
+opencv-python
 # numpy~=1.19.5
 tqdm~=4.60.0
-# torch~=2.3.0
-# torchvision~=0.18.0
+torch~=2.3.0
+torchvision~=0.18.0
 thop~=0.0.31-2005241907
 
 # opencv-python numpy tqdm torchvision thop

@@ -5,6 +5,7 @@ import time
 import multiprocessing as mp
 import numpy as np
 import threading
+import onnxruntime as ort
 # coordinates system
 #  ------------------------------>  [ x: range=-1.0~1.0; w: range=0~W ]
 #  | -----------------------------
@@ -29,7 +30,6 @@ def max_pool(x,nms_radius,res,number):
 def max_pool_parallel(x,nms_radius):
     res = []
     threads = []
-    
     for i in range(0, x[0][0].size()[0],x[0][0].size()[0]//2):
         thread = threading.Thread(target=max_pool, args=(x[:,:,i:i+x[0][0].size()[0]//2,:],nms_radius,res,i))
         thread.start()
@@ -43,14 +43,40 @@ def max_pool_parallel(x,nms_radius):
 def simple_nms(scores, nms_radius: int):
     """ Fast Non-maximum suppression to remove nearby points """
     assert (nms_radius >= 0)
+    ort_session = ort.InferenceSession("max_pool_model.onnx")
+    def max_pool(x):
+        ort_inputs = {'input': x.numpy()}
+        ort_outputs = ort_session.run(None, ort_inputs)
+        output_tensor = torch.tensor(ort_outputs[0])
+        return output_tensor
     zeros = torch.zeros_like(scores)
-    max_mask = scores == max_pool_parallel(scores,nms_radius)
+    max_mask = scores == max_pool(scores)
     for _ in range(2):
-        supp_mask = max_pool_parallel(max_mask.float(),nms_radius) > 0
+        supp_mask = max_pool(max_mask.float()) > 0
         supp_scores = torch.where(supp_mask, zeros, scores)
-        new_max_mask = supp_scores == max_pool_parallel(supp_scores,nms_radius)
+        new_max_mask = supp_scores == max_pool(supp_scores)
         max_mask = max_mask | (new_max_mask & (~supp_mask))
     return torch.where(max_mask, scores, zeros)
+
+
+def simple_nms1(scores, nms_radius: int):
+    """ Fast Non-maximum suppression to remove nearby points """
+    assert (nms_radius >= 0)
+
+    def max_pool(x):
+        return torch.nn.functional.max_pool2d(
+            x, kernel_size=nms_radius * 2 + 1, stride=1, padding=nms_radius)
+
+    zeros = torch.zeros_like(scores)
+    max_mask = scores == max_pool(scores)
+
+    for _ in range(2):
+        supp_mask = max_pool(max_mask.float()) > 0
+        supp_scores = torch.where(supp_mask, zeros, scores)
+        new_max_mask = supp_scores == max_pool(supp_scores)
+        max_mask = max_mask | (new_max_mask & (~supp_mask))
+    return torch.where(max_mask, scores, zeros)
+
 
 def nms_fast(scores, dist_thresh = 3):
     """
