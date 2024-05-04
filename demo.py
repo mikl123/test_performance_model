@@ -119,42 +119,27 @@ def predict(step_1, step_2, data):
     print(str(time.time() - start1) + "step2")
     return res
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='ALike Demo.')
-    parser.add_argument('input', type=str, default='',
-                        help='Image directory or movie file or "camera0" (for webcam0).')
-    parser.add_argument('--model', choices=['alike-t', 'alike-s', 'alike-n', 'alike-l'], default="alike-t",
-                        help="The model configuration")
-    parser.add_argument('--device', type=str, default='cpu', help="Running device (default: cuda).")
-    parser.add_argument('--top_k', type=int, default=-1,
-                        help='Detect top K keypoints. -1 for threshold based mode, >0 for top K mode. (default: -1)')
-    parser.add_argument('--scores_th', type=float, default=0.2,
-                        help='Detector score threshold (default: 0.2).')
-    parser.add_argument('--n_limit', type=int, default=5000,
-                        help='Maximum number of keypoints to be detected (default: 5000).')
-    parser.add_argument('--no_display', action='store_true',
-                        help='Do not display images to screen. Useful if running remotely (default: False).')
-    parser.add_argument('--no_sub_pixel', action='store_true',
-                        help='Do not detect sub-pixel keypoints (default: False).')
-    args = parser.parse_args()
-
     logging.basicConfig(level=logging.INFO)
-
-    image_loader = ImageLoader(args.input)
-    model = ALike(**configs[args.model],
-                  device=args.device,
-                  top_k=args.top_k,
-                  scores_th=args.scores_th,
-                  n_limit=args.n_limit)
-    
+    args = {"model":"alike-t",
+        "input":r".\assets\tum",
+        "device":"cpu",
+        "top_k":-1,
+        "scores_th":0.2,
+        "n_limit":5000,
+        "no_display":False
+        }
+    image_loader = ImageLoader(args["input"])
+    model = ALike(**configs[args["model"]],
+                  device=args["device"],
+                  top_k=args["top_k"],
+                  scores_th=args["scores_th"],
+                  n_limit=args["n_limit"])
     onnx_model_path = "step1.onnx"
     ort_session = onnxruntime.InferenceSession(onnx_model_path)
-    
     tracker = SimpleTracker()
-
-    if not args.no_display:
+    if not args["no_display"]:
         logging.info("Press 'q' to stop!")
-        cv2.namedWindow(args.model)
-
+        cv2.namedWindow(args["model"])
     runtime = []
     progress_bar = tqdm(image_loader)
     for img in progress_bar:
@@ -166,34 +151,12 @@ if __name__ == '__main__':
         kpts = pred["keypoints"]
         desc = pred["descriptors"]
         out, N_matches = tracker.update(img, kpts, desc)
-        if not args.no_display:
-            cv2.imshow(args.model, out)
+        if not args["no_display"]:
+            cv2.imshow(args["model"], out)
             if cv2.waitKey(1) == ord('q'):
                 break
-    
-    average_all = model.access_dkd().average_all
-    average_detect_keypoints =model.access_dkd().average_detect_keypoints
-    average_sample_descriptors =model.access_dkd().average_sample_descriptors
-    average_nms = model.access_dkd().average_nms
-    average_keypoint_other = model.access_dkd().average_keypoint_other
-
-    # print("DKD:")
-    # print(np.sum(average_all) / iterations)
-
-    # print("Detect Keypoints:")
-    # print(np.sum(average_detect_keypoints) / iterations)
-
-    # print("Sample Descriptors:")
-    # print(np.sum(average_sample_descriptors) / iterations)
-
-    # print("NMS_default:")
-    # print(np.sum(average_nms) / iterations)
-
-    # print("Average keypoints other:")
-    # print(np.sum(average_keypoint_other) / iterations)
-
     logging.info('Finished!')
-    if not args.no_display:
+    if not args["no_display"]:
         logging.info('Press any key to exit!')
         cv2.waitKey()
 
